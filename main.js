@@ -14,7 +14,7 @@ import Style from 'ol/style/Style.js';
 import {fromLonLat} from 'ol/proj.js';
 
 // Pontos de exemplo em Maceió
-const pontos = [
+/*const pontos = [
   // Exemplo de conversão: 09°40’24,83”S; 035°42’57,66”W → [-35.716016, -9.673564]
   { nome: "Praia do Pontal do Peba", status: "proprio", coordenadas: [-36.30153, -10.34516] },
   { nome: "Rio São Francisco/Piaçabuçú – Rua Coronel José Leonel", status: "proprio", coordenadas: [-36.43490, -10.40829] },
@@ -42,7 +42,7 @@ const pontos = [
   { nome: "Praia do Mirante da Sereia", status: "proprio", coordenadas: [-35.64407, -9.56542] },
   { nome: "Praia de Ipioca", status: "proprio", coordenadas: [-35.60485, -9.53108] },
   { nome: "Praia de Paripueira", status: "proprio", coordenadas: [-35.54882, -9.47132] },
-];
+];*/
 const view = new View({
   center: fromLonLat([-35.7350, -9.66599]), // Centraliza em Maceió
   zoom: 12,
@@ -123,36 +123,43 @@ new VectorLayer({
 });
 
 // Adiciona os pontos das praias com cores conforme status
-const features = pontos.map(ponto => {
-  const feature = new Feature({
-    geometry: new Point(fromLonLat(ponto.coordenadas)),
-    nome: ponto.nome,
-    status: ponto.status,
-  });
-  return feature;
-});
 
-const styleFunction = feature => {
-  const status = feature.get('status');
-  return new Style({
-    image: new CircleStyle({
-      radius: 8,
-      fill: new Fill({
-        color: status === 'proprio' ? 'green' : 'red',
+fetch('http://localhost:8080/api/praias')
+  .then(response => response.json())
+  .then(pontos => {
+    const features = pontos.map(ponto => {
+      return new Feature({
+        geometry: new Point(fromLonLat(ponto.coordenadas)),
+        nome: ponto.nome,
+        status: ponto.status,
+      });
+    });
+
+    const styleFunction = feature => {
+      const status = feature.get('status');
+      return new Style({
+        image: new CircleStyle({
+          radius: 8,
+          fill: new Fill({
+            color: status === 'proprio' ? 'green' : 'red',
+          }),
+          stroke: new Stroke({
+            color: '#fff',
+            width: 2,
+          }),
+        }),
+      });
+    };
+
+    const pontosLayer = new VectorLayer({
+      source: new VectorSource({
+        features: features,
       }),
-      stroke: new Stroke({
-        color: '#fff',
-        width: 2,
-      }),
-    }),
+      style: styleFunction,
+    });
+
+    map.addLayer(pontosLayer);
+  })
+  .catch(error => {
+    console.error('Erro ao buscar pontos:', error);
   });
-};
-
-const pontosLayer = new VectorLayer({
-  source: new VectorSource({
-    features: features,
-  }),
-  style: styleFunction,
-});
-
-map.addLayer(pontosLayer);
