@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  balneabilidade-api:
+    image: juliomourajr92/balneabilidadeapi:latest
+    container_name: balneabilidade-api
+    ports:
+      - "8080:8080"
+    networks:
+      - balneabilidade-network
+    restart: unless-stopped
+
+  balneabilidade-cadastro:
+    image: juliomourajr92/balneabilidadecadastro:latest
+    container_name: balneabilidade-cadastro
+    ports:
+      - "5000:5000"
+    networks:
+      - balneabilidade-network
+    restart: unless-stopped
+    depends_on:
+      - balneabilidade-api
+
+  balneabilidade-site:
+    image: juliomourajr92/balneabilidadesite:latest
+    container_name: balneabilidade-site
+    ports:
+      - "5173:5173"
+    networks:
+      - balneabilidade-network
+    restart: unless-stopped
+    depends_on:
+      - balneabilidade-api
+
+networks:
+  balneabilidade-network:
+    driver: bridge
