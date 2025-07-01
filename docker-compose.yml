@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   balneabilidade-api:
-    image: juliomourajr92/balneabilidadeapi:latest
+    image: juliomourajr92/balneabilidadeapiv1:latest
     container_name: balneabilidade-api
     ports:
       - "8080:8080"
@@ -11,7 +11,7 @@ services:
     restart: unless-stopped
 
   balneabilidade-cadastro:
-    image: juliomourajr92/balneabilidadecadastro:latest
+    image: juliomourajr92/balneabilidadeadmin:latest
     container_name: balneabilidade-cadastro
     ports:
       - "5000:5000"
