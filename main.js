@@ -1,48 +1,40 @@
-import Feature from 'ol/Feature.js';
-import Geolocation from 'ol/Geolocation.js';
-import Map from 'ol/Map.js';
-import View from 'ol/View.js';
-import Point from 'ol/geom/Point.js';
-import TileLayer from 'ol/layer/Tile.js';
-import VectorLayer from 'ol/layer/Vector.js';
-import OSM from 'ol/source/OSM.js';
-import VectorSource from 'ol/source/Vector.js';
-import CircleStyle from 'ol/style/Circle.js';
-import Fill from 'ol/style/Fill.js';
-import Stroke from 'ol/style/Stroke.js';
-import Style from 'ol/style/Style.js';
-import {fromLonLat} from 'ol/proj.js';
+// Usando OpenLayers global (sem imports)
+const { Map, View, Feature, Geolocation } = ol;
+const { Point } = ol.geom;
+const { Tile: TileLayer, Vector: VectorLayer } = ol.layer;
+const { OSM, Vector: VectorSource } = ol.source;
+const { Style, Fill, Stroke, Circle } = ol.style;
+const { fromLonLat } = ol.proj;
 
-// Pontos de exemplo em Maceió
-/*const pontos = [
-  // Exemplo de conversão: 09°40’24,83”S; 035°42’57,66”W → [-35.716016, -9.673564]
-  { nome: "Praia do Pontal do Peba", status: "proprio", coordenadas: [-36.30153, -10.34516] },
-  { nome: "Rio São Francisco/Piaçabuçú – Rua Coronel José Leonel", status: "proprio", coordenadas: [-36.43490, -10.40829] },
-  { nome: "Praia de Feliz Deserto", status: "proprio", coordenadas: [-36.29067, -10.29973] },
-  { nome: "Praia de Miai de Baixo", status: "proprio", coordenadas: [-36.21588, -10.22061] },
-  { nome: "Praia de Miai de Cima", status: "proprio", coordenadas: [-36.18935, -10.20198] },
-  { nome: "Praia do Pontal de Coruripe", status: "proprio", coordenadas: [-36.13637, -10.15833] },
-  { nome: "Praia da Lagoa do Pau", status: "proprio", coordenadas: [-36.10948, -10.12913] },
-  { nome: "Praia de Duas Barras", status: "proprio", coordenadas: [-36.03177, -10.04927] },
-  { nome: "Praia de Lagoa Azeda", status: "proprio", coordenadas: [-35.97976, -9.97111] },
-  { nome: "Praia do Gunga", status: "proprio", coordenadas: [-35.90471, -9.86125] },
-  { nome: "Praia de Atalaia", status: "proprio", coordenadas: [-35.90661, -9.84443] },
-  { nome: "Praia da Barra de São Miguel", status: "proprio", coordenadas: [-35.88886, -9.83883] },
-  { nome: "Praia do Francês", status: "proprio", coordenadas: [-35.84170, -9.77166] },
-  { nome: "Praia do Saco", status: "proprio", coordenadas: [-35.82011, -9.74408] },
-  { nome: "Praia do Pontal da Barra", status: "proprio", coordenadas: [-35.77688, -9.69760] },
-  { nome: "Praia da Avenida", status: "improprio", coordenadas: [-35.74039, -9.67000] },
-  { nome: "Praia da Pajuçara", status: "improprio", coordenadas: [-35.71546, -9.66579] },
-  { nome: "Praia da Ponta Verde", status: "improprio", coordenadas: [-35.69928, -9.66443] },
-  { nome: "Praia de Jatiúca", status: "improprio", coordenadas: [-35.69314, -9.64253] },
-  { nome: "Praia de Cruz das Almas", status: "proprio", coordenadas: [-35.67820, -9.63850] },
-  { nome: "Praia de Jacarecica", status: "improprio", coordenadas: [-35.68768, -9.61349] },
-  { nome: "Praia de Guaxuma", status: "proprio", coordenadas: [-35.66809, -9.59229] },
-  { nome: "Praia de Garça Torta", status: "proprio", coordenadas: [-35.60979, -9.58340] },
-  { nome: "Praia do Mirante da Sereia", status: "proprio", coordenadas: [-35.64407, -9.56542] },
-  { nome: "Praia de Ipioca", status: "proprio", coordenadas: [-35.60485, -9.53108] },
-  { nome: "Praia de Paripueira", status: "proprio", coordenadas: [-35.54882, -9.47132] },
-];*/
+// Função para detectar a URL da API baseada no ambiente
+function getApiUrl() {
+  const hostname = window.location.hostname;
+  
+  if (hostname.includes('amazonaws') || hostname.includes('elb') || 
+      (!hostname.includes('localhost') && !hostname.includes('127.0.0.1'))) {
+    console.log('🚀 Modo produção: usando AWS');
+    return 'http://balneabilidade-alb-1128086229.us-east-1.elb.amazonaws.com/api/praias';
+  } else {
+    console.log('🔧 Modo desenvolvimento: usando localhost');
+    return 'http://localhost:8080/api/praias';
+  }
+}
+
+// Mostrar mensagem de status
+function showMessage(text, type = 'success', duration = 3000) {
+  const existing = document.querySelector('.status-message');
+  if (existing) existing.remove();
+  
+  const msg = document.createElement('div');
+  msg.className = `status-message ${type}`;
+  msg.textContent = text;
+  document.body.appendChild(msg);
+  
+  setTimeout(() => {
+    if (msg.parentNode) msg.remove();
+  }, duration);
+}
+
 const view = new View({
   center: fromLonLat([-35.7350, -9.66599]), // Centraliza em Maceió
   zoom: 12,
@@ -69,42 +61,59 @@ function el(id) {
   return document.getElementById(id);
 }
 
-el('track').addEventListener('change', function () {
-  geolocation.setTracking(this.checked);
-});
+// Verificar se elementos existem antes de adicionar listeners
+const trackElement = el('track');
+if (trackElement) {
+  trackElement.addEventListener('change', function () {
+    geolocation.setTracking(this.checked);
+    if (this.checked) {
+      showMessage('📍 Rastreamento GPS ativado', 'loading');
+    } else {
+      showMessage('📍 Rastreamento GPS desativado', 'success');
+    }
+  });
+}
 
-// update the HTML page when the position changes.
+// Atualizar informações de posição
 geolocation.on('change', function () {
-  el('accuracy').innerText = geolocation.getAccuracy() + ' [m]';
-  el('altitude').innerText = geolocation.getAltitude() + ' [m]';
-  el('altitudeAccuracy').innerText = geolocation.getAltitudeAccuracy() + ' [m]';
-  el('heading').innerText = geolocation.getHeading() + ' [rad]';
-  el('speed').innerText = geolocation.getSpeed() + ' [m/s]';
+  const accuracy = el('accuracy');
+  const altitude = el('altitude');
+  const speed = el('speed');
+  
+  if (accuracy) accuracy.innerText = Math.round(geolocation.getAccuracy()) + ' m';
+  if (altitude) altitude.innerText = (geolocation.getAltitude() || 0).toFixed(1) + ' m';
+  if (speed) speed.innerText = (geolocation.getSpeed() || 0).toFixed(1) + ' m/s';
 });
 
-// handle geolocation error.
+// Tratar erros de geolocalização
 geolocation.on('error', function (error) {
-  const info = document.getElementById('info');
-  info.innerHTML = error.message;
-  info.style.display = '';
+  console.error('Erro de geolocalização:', error);
+  showMessage('❌ Erro no GPS: ' + error.message, 'error');
+  const info = el('info');
+  if (info) {
+    info.innerHTML = error.message;
+    info.style.display = 'block';
+  }
 });
 
+// Feature para mostrar precisão da localização
 const accuracyFeature = new Feature();
 geolocation.on('change:accuracyGeometry', function () {
   accuracyFeature.setGeometry(geolocation.getAccuracyGeometry());
 });
 
+// Feature para mostrar posição atual
 const positionFeature = new Feature();
 positionFeature.setStyle(
   new Style({
-    image: new CircleStyle({
-      radius: 6,
+    image: new Circle({
+      radius: 8,
       fill: new Fill({
         color: '#3399CC',
       }),
       stroke: new Stroke({
         color: '#fff',
-        width: 2,
+        width: 3,
       }),
     }),
   }),
@@ -113,8 +122,12 @@ positionFeature.setStyle(
 geolocation.on('change:position', function () {
   const coordinates = geolocation.getPosition();
   positionFeature.setGeometry(coordinates ? new Point(coordinates) : null);
+  if (coordinates) {
+    showMessage('📍 Posição GPS atualizada', 'success', 2000);
+  }
 });
 
+// Adicionar layer de geolocalização
 new VectorLayer({
   map: map,
   source: new VectorSource({
@@ -122,11 +135,34 @@ new VectorLayer({
   }),
 });
 
-// Adiciona os pontos das praias com cores conforme status
+// Carregar pontos das praias
+console.log('🔗 Carregando pontos de:', getApiUrl());
+console.log('🌐 Hostname atual:', window.location.hostname);
 
-fetch('http://localhost:8080/api/praias')
-  .then(response => response.json())
-  .then(pontos => {
+async function carregarPontos() {
+  showMessage('📡 Carregando dados das praias...', 'loading');
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(getApiUrl(), {
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const pontos = await response.json();
+    console.log(`✅ ${pontos.length} pontos carregados da API`);
+    
     const features = pontos.map(ponto => {
       return new Feature({
         geometry: new Point(fromLonLat(ponto.coordenadas)),
@@ -138,14 +174,14 @@ fetch('http://localhost:8080/api/praias')
     const styleFunction = feature => {
       const status = feature.get('status');
       return new Style({
-        image: new CircleStyle({
-          radius: 8,
+        image: new Circle({
+          radius: 10,
           fill: new Fill({
-            color: status === 'proprio' ? 'green' : 'red',
+            color: status === 'proprio' ? '#4CAF50' : '#f44336',
           }),
           stroke: new Stroke({
             color: '#fff',
-            width: 2,
+            width: 3,
           }),
         }),
       });
@@ -159,7 +195,45 @@ fetch('http://localhost:8080/api/praias')
     });
 
     map.addLayer(pontosLayer);
-  })
-  .catch(error => {
-    console.error('Erro ao buscar pontos:', error);
-  });
+    
+    // Adicionar popup ao clicar nos pontos
+    map.on('click', function (evt) {
+      const feature = map.forEachFeatureAtPixel(evt.pixel, function (feature) {
+        return feature;
+      });
+      
+      if (feature && feature.get('nome')) {
+        const nome = feature.get('nome');
+        const status = feature.get('status');
+        const statusText = status === 'proprio' ? 'PRÓPRIA' : 'IMPRÓPRIA';
+        const statusColor = status === 'proprio' ? '#4CAF50' : '#f44336';
+        
+        showMessage(`🏖️ ${nome} - ${statusText}`, status === 'proprio' ? 'success' : 'error', 4000);
+      }
+    });
+    
+    showMessage(`✅ ${pontos.length} praias carregadas`, 'success');
+    
+  } catch (error) {
+    clearTimeout(timeoutId);
+    console.error('❌ Erro ao buscar pontos:', error);
+    
+    let errorMessage = '❌ Erro ao carregar dados das praias';
+    
+    if (error.name === 'AbortError') {
+      errorMessage = '⏱️ Timeout: API demorou muito para responder';
+    } else if (error.message.includes('504')) {
+      errorMessage = '🚫 API temporariamente indisponível (504)';
+    } else if (error.message.includes('Failed to fetch')) {
+      errorMessage = '🌐 Erro de conexão com a API';
+    }
+    
+    showMessage(errorMessage, 'error', 8000);
+  }
+}
+
+// Inicializar aplicação
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🌊 Sistema de Balneabilidade inicializado');
+  carregarPontos();
+});

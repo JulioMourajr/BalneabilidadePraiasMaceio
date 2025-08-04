@@ -11,7 +11,7 @@ services:
     restart: unless-stopped
 
   balneabilidade-cadastro:
-    image: juliomourajr92/balneabilidadeadmin:latest
+    image: juliomourajr92/balneabilidadecadastro:1.0
     container_name: balneabilidade-cadastro
     ports:
       - "5000:5000"
@@ -22,7 +22,7 @@ services:
       - balneabilidade-api
 
   balneabilidade-site:
-    image: juliomourajr92/balneabilidadesite:latest
+    image: juliomourajr92/praiasfront:latest
     container_name: balneabilidade-site
     ports:
       - "5173:5173"
